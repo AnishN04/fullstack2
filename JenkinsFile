@@ -1,10 +1,11 @@
 pipeline {
     agent any
+
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'test',
-                    url: 'https://github.com/AnishN04/fullstack.git'
+                git branch: 'main',
+                    url: 'https://github.com/AnishN04/fullstack2.git'
             }
         }
 
@@ -27,7 +28,12 @@ pipeline {
         stage('Run Frontend Tests') {
             steps {
                 dir('frontend') {
-                    bat 'npm test -- --passWithNoTests'
+                    bat 'npm test -- --ci --reporters=default --reporters=jest-junit'
+                }
+            }
+            post {
+                always {
+                    junit 'frontend/reports/jest/frontend-junit.xml'
                 }
             }
         }
@@ -35,9 +41,43 @@ pipeline {
         stage('Run Backend Tests') {
             steps {
                 dir('backend') {
-                    bat 'npm test -- --passWithNoTests'
+                    bat 'npm test -- --ci --reporters=default --reporters=jest-junit'
                 }
             }
+            post {
+                always {
+                    junit 'backend/reports/jest/backend-junit.xml'
+                }
+            }
+        }
+
+        stage('Build Frontend') {
+            steps {
+                dir('frontend') {
+                    bat '''
+                        set "CI="
+                        npm run build
+                    '''
+                }
+            }
+        }
+
+        stage('Build Backend') {
+            steps {
+                dir('backend') {
+                    bat 'npm run build'
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Build & Tests successful!"
+            archiveArtifacts artifacts: 'frontend/build/**', fingerprint: true
+        }
+        failure {
+            echo "❌ Pipeline failed!"
         }
     }
 }
