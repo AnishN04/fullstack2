@@ -2,58 +2,56 @@ pipeline {
     agent any
 
     stages {
-        stage('Backend: Install') {
+        stage('Checkout') {
             steps {
-                dir('backend') {
-                    bat 'npm install'
+                git branch: 'test',
+                    url: 'https://github.com/AnishN04/fullstack2.git'
+            }
+        }
+
+        stage('Install Frontend Dependencies') {
+            steps {
+                dir('frontend') {
+                    bat 'npm install --no-audit --no-fund'
                 }
             }
         }
 
-        stage('Backend: Test') {
+        stage('Install Backend Dependencies') {
             steps {
                 dir('backend') {
-                    bat 'npm test'
+                    bat 'npm install --no-audit --no-fund'
+                }
+            }
+        }
+
+        stage('Run Frontend Tests') {
+            steps {
+                dir('frontend') {
+                    bat 'npm test -- --ci --reporters=default --reporters=jest-junit'
                 }
             }
             post {
                 always {
-                    junit 'reports/jest/backend-junit.xml'
+                    junit 'frontend/reports/jest/frontend-junit.xml'
                 }
             }
         }
 
-        stage('Backend: Build') {
+        stage('Run Backend Tests') {
             steps {
                 dir('backend') {
-                    // Only if your backend has a build step
-                    bat 'npm run build'
-                }
-            }
-        }
-
-        stage('Frontend: Install') {
-            steps {
-                dir('frontend') {
-                    bat 'npm install'
-                }
-            }
-        }
-
-        stage('Frontend: Test') {
-            steps {
-                dir('frontend') {
-                    bat 'npm test'
+                    bat 'npm test -- --ci --reporters=default --reporters=jest-junit'
                 }
             }
             post {
                 always {
-                    junit 'reports/jest/frontend-junit.xml'
+                    junit 'backend/reports/jest/backend-junit.xml'
                 }
             }
         }
 
-        stage('Frontend: Build') {
+        stage('Build Frontend') {
             steps {
                 dir('frontend') {
                     bat '''
@@ -63,18 +61,23 @@ pipeline {
                 }
             }
         }
+
+        stage('Build Backend') {
+            steps {
+                dir('backend') {
+                    bat 'npm run build'
+                }
+            }
+        }
     }
 
     post {
-        always {
-            echo 'Pipeline finished!'
-        }
         success {
-            echo 'Build & Tests successful, archiving frontend artifacts...'
+            echo "✅ Build & Tests successful!"
             archiveArtifacts artifacts: 'frontend/build/**', fingerprint: true
         }
         failure {
-            echo 'Pipeline failed!'
+            echo "❌ Pipeline failed!"
         }
     }
 }
