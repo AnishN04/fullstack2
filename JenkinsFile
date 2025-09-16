@@ -28,7 +28,9 @@ pipeline {
         stage('Run Frontend Tests') {
             steps {
                 dir('frontend') {
-                    bat 'npm test -- --ci --passWithNoTests --reporters=default --reporters=jest-junit'
+                    bat 'mkdir reports || exit 0'
+                    bat 'mkdir reports\\jest || exit 0'
+                    bat 'set JEST_JUNIT_OUTPUT=reports\\jest\\frontend-junit.xml && npm test -- --ci --passWithNoTests'
                 }
             }
             post {
@@ -41,7 +43,9 @@ pipeline {
         stage('Run Backend Tests') {
             steps {
                 dir('backend') {
-                    bat 'npm test -- --ci --passWithNoTests --reporters=default --reporters=jest-junit'
+                    bat 'mkdir reports || exit 0'
+                    bat 'mkdir reports\\jest || exit 0'
+                    bat 'set JEST_JUNIT_OUTPUT=reports\\jest\\backend-junit.xml && npm test -- --ci --passWithNoTests'
                 }
             }
             post {
