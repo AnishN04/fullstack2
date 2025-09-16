@@ -1,43 +1,80 @@
 pipeline {
     agent any
+
     stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'test',
-                    url: 'https://github.com/AnishN04/fullstack.git'
-            }
-        }
-
-        stage('Install Frontend Dependencies') {
-            steps {
-                dir('frontend') {
-                    bat 'npm install --no-audit --no-fund'
-                }
-            }
-        }
-
-        stage('Install Backend Dependencies') {
+        stage('Backend: Install') {
             steps {
                 dir('backend') {
-                    bat 'npm install --no-audit --no-fund'
+                    bat 'npm install'
                 }
             }
         }
 
-        stage('Run Frontend Tests') {
-            steps {
-                dir('frontend') {
-                    bat 'npm test -- --passWithNoTests'
-                }
-            }
-        }
-
-        stage('Run Backend Tests') {
+        stage('Backend: Test') {
             steps {
                 dir('backend') {
-                    bat 'npm test -- --passWithNoTests'
+                    bat 'npm test'
                 }
             }
+            post {
+                always {
+                    junit 'reports/jest/backend-junit.xml'
+                }
+            }
+        }
+
+        stage('Backend: Build') {
+            steps {
+                dir('backend') {
+                    // Only if your backend has a build step
+                    bat 'npm run build'
+                }
+            }
+        }
+
+        stage('Frontend: Install') {
+            steps {
+                dir('frontend') {
+                    bat 'npm install'
+                }
+            }
+        }
+
+        stage('Frontend: Test') {
+            steps {
+                dir('frontend') {
+                    bat 'npm test'
+                }
+            }
+            post {
+                always {
+                    junit 'reports/jest/frontend-junit.xml'
+                }
+            }
+        }
+
+        stage('Frontend: Build') {
+            steps {
+                dir('frontend') {
+                    bat '''
+                        set "CI="
+                        npm run build
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline finished!'
+        }
+        success {
+            echo 'Build & Tests successful, archiving frontend artifacts...'
+            archiveArtifacts artifacts: 'frontend/build/**', fingerprint: true
+        }
+        failure {
+            echo 'Pipeline failed!'
         }
     }
 }
