@@ -1,0 +1,43 @@
+pipeline {
+    agent any
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'test',
+                    url: 'https://github.com/AnishN04/fullstack.git'
+            }
+        }
+
+        stage('Install Frontend Dependencies') {
+            steps {
+                dir('frontend') {
+                    bat 'npm install --no-audit --no-fund'
+                }
+            }
+        }
+
+        stage('Install Backend Dependencies') {
+            steps {
+                dir('backend') {
+                    bat 'npm install --no-audit --no-fund'
+                }
+            }
+        }
+
+        stage('Run Frontend Tests') {
+            steps {
+                dir('frontend') {
+                    bat 'npm test -- --passWithNoTests'
+                }
+            }
+        }
+
+        stage('Run Backend Tests') {
+            steps {
+                dir('backend') {
+                    bat 'npm test -- --passWithNoTests'
+                }
+            }
+        }
+    }
+}
